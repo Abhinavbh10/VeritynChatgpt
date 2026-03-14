@@ -1,0 +1,162 @@
+{
+  "brand_identity": {
+    "name": "Verityn",
+    "description": "A premium, dark-mode-first news aggregator that distills chaos into clarity.",
+    "mission": "Truth in motion. News without the noise.",
+    "archetype": "The Editorial Future",
+    "tone": "Sophisticated, Direct, Essential, Cinematic"
+  },
+  "design_principles": [
+    "Mobile-First Cinematography: Every scroll feels like a camera pan.",
+    "Dark Mode Native: Light is used only to guide attention, never to flood the screen.",
+    "Type as Texture: Headlines are the primary visual element.",
+    "Fluid Context: Transitions between feed and story are seamless (Shared Element style)."
+  ],
+  "technical_constraints": {
+    "framework": "React Web (Mobile-First PWA style)",
+    "styling": "Tailwind CSS",
+    "components": "Shadcn UI",
+    "theme_mode": "dark-only"
+  },
+  "colors": {
+    "palette": {
+      "background": {
+        "base": "#09090b",
+        "surface": "#18181b",
+        "surface_highlight": "#27272a",
+        "overlay": "rgba(9, 9, 11, 0.8)"
+      },
+      "text": {
+        "primary": "#fafafa",
+        "secondary": "#a1a1aa",
+        "muted": "#71717a",
+        "inverse": "#09090b"
+      },
+      "brand": {
+        "primary": "#3b82f6",
+        "secondary": "#8b5cf6",
+        "accent": "#f59e0b",
+        "error": "#ef4444",
+        "success": "#10b981"
+      }
+    },
+    "gradients": {
+      "hero_overlay": "linear-gradient(to top, #09090b 10%, transparent 100%)",
+      "premium_glow": "linear-gradient(135deg, rgba(59,130,246,0.1) 0%, rgba(139,92,246,0.1) 100%)",
+      "timeline_beam": "linear-gradient(to bottom, #3b82f6, #8b5cf6)"
+    }
+  },
+  "typography": {
+    "fonts": {
+      "heading": {
+        "family": "Playfair Display, serif",
+        "usage": "Headlines, Hero Sections, Category Titles",
+        "weights": ["400", "700"]
+      },
+      "body": {
+        "family": "Inter, sans-serif",
+        "usage": "Article Text, UI Elements, Metadata",
+        "weights": ["300", "400", "500", "600"]
+      }
+    },
+    "scale": {
+      "h1": "text-4xl md:text-5xl tracking-tight leading-tight font-serif",
+      "h2": "text-2xl md:text-3xl tracking-tight leading-snug font-serif",
+      "h3": "text-xl font-semibold tracking-normal",
+      "body_lg": "text-lg leading-relaxed text-zinc-300",
+      "body_base": "text-base leading-relaxed text-zinc-400",
+      "caption": "text-xs uppercase tracking-widest text-zinc-500 font-medium"
+    }
+  },
+  "layout_system": {
+    "container": {
+      "mobile": "w-full max-w-md mx-auto min-h-screen bg-zinc-950 overflow-hidden shadow-2xl relative",
+      "desktop_wrapper": "w-full min-h-screen bg-black flex justify-center items-center p-0 md:p-8"
+    },
+    "grid_bento": "grid grid-cols-1 md:grid-cols-2 gap-4 p-4",
+    "feed_stack": "flex flex-col gap-6 p-0",
+    "spacing": {
+      "page_x": "px-5",
+      "page_y": "py-6",
+      "section_gap": "gap-8"
+    }
+  },
+  "components": {
+    "BottomNav": {
+      "description": "Fixed bottom navigation with glassmorphism.",
+      "styles": "fixed bottom-0 left-0 right-0 z-50 bg-zinc-950/80 backdrop-blur-xl border-t border-white/5 h-16 flex items-center justify-around max-w-md mx-auto w-full pb-safe",
+      "active_state": "text-blue-500 scale-110",
+      "inactive_state": "text-zinc-500 hover:text-zinc-300"
+    },
+    "StoryCard": {
+      "description": "Immersive card with background image and text overlay.",
+      "styles": {
+        "container": "relative w-full aspect-[4/5] rounded-3xl overflow-hidden shadow-lg group isolate",
+        "image": "absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105",
+        "overlay": "absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/50 to-transparent",
+        "content": "absolute bottom-0 left-0 right-0 p-6 z-10 flex flex-col gap-2"
+      }
+    },
+    "Timeline": {
+      "description": "Vertical line with nodes connecting events.",
+      "styles": {
+        "container": "relative pl-8 border-l border-zinc-800 ml-4 space-y-8",
+        "node": "absolute -left-[5px] top-2 w-2.5 h-2.5 rounded-full bg-blue-500 ring-4 ring-zinc-950",
+        "content": "bg-zinc-900/50 p-4 rounded-xl border border-white/5"
+      }
+    },
+    "TopicSelector": {
+      "description": "Onboarding pill selection.",
+      "styles": {
+        "container": "flex flex-wrap gap-3 justify-center",
+        "item": "px-6 py-3 rounded-full border border-zinc-800 bg-zinc-900/50 text-zinc-300 transition-all cursor-pointer",
+        "selected": "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.3)]"
+      }
+    },
+    "SummaryCard": {
+      "description": "AI Summary block.",
+      "styles": "bg-zinc-900/80 p-6 rounded-2xl border border-white/10 backdrop-blur-md my-6 relative overflow-hidden",
+      "badge": "absolute top-4 right-4 text-[10px] font-bold bg-blue-500/10 text-blue-400 px-2 py-1 rounded border border-blue-500/20"
+    }
+  },
+  "assets": {
+    "images": {
+      "technology": "https://images.unsplash.com/photo-1760978632114-0939f0d60045?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzV8MHwxfHNlYXJjaHwzfHx0ZWNobm9sb2d5JTIwYWJzdHJhY3QlMjBtaW5pbWFsaXN0JTIwZGFya3xlbnwwfHx8fDE3NzM1MjI2NTF8MA&ixlib=rb-4.1.0&q=85",
+      "business": "https://images.unsplash.com/photo-1741742266218-4b3a46e4f3a0?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2ODl8MHwxfHNlYXJjaHwzfHxidXNpbmVzcyUyMHNreXNjcmFwZXIlMjBmaW5hbmNlJTIwZGFya3xlbnwwfHx8fDE3NzM1MjI2NTJ8MA&ixlib=rb-4.1.0&q=85",
+      "science": "https://images.unsplash.com/photo-1764504985836-d494945ee174?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzB8MHwxfHNlYXJjaHwxfHxzY2llbmNlJTIwZnV0dXJpc3RpYyUyMGxhYm9yYXRvcnklMjBkYXJrfGVufDB8fHx8MTc3MzUyMjY1M3ww&ixlib=rb-4.1.0&q=85",
+      "sports": "https://images.unsplash.com/photo-1758646883151-3530cc15512e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2OTF8MHwxfHNlYXJjaHwxfHxzcG9ydHMlMjBzdGFkaXVtJTIwbGlnaHRzJTIwZGFya3xlbnwwfHx8fDE3NzM1MjI2NTR8MA&ixlib=rb-4.1.0&q=85",
+      "general": "https://images.unsplash.com/photo-1760421131154-f884a2e26b7e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NTJ8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBjaXR5c2NhcGUlMjBuaWdodCUyMGRhcmt8ZW58MHx8fHwxNzczNTIyNjU0fDA&ixlib=rb-4.1.0&q=85",
+      "loading_placeholder": "https://images.unsplash.com/photo-1760978632061-ad00f48789ae?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzV8MHwxfHNlYXJjaHwxfHx0ZWNobm9sb2d5JTIwYWJzdHJhY3QlMjBtaW5pbWFsaXN0JTIwZGFya3xlbnwwfHx8fDE3NzM1MjI2NTF8MA&ixlib=rb-4.1.0&q=85"
+    },
+    "icons": {
+      "library": "lucide-react",
+      "set": ["Newspaper", "Compass", "Bookmark", "User", "ChevronLeft", "Share2", "Play", "Clock", "Check"]
+    }
+  },
+  "interaction_rules": {
+    "gestures": [
+      "Swipe left/right on feed to change stories",
+      "Pull down to refresh (haptic triggered)",
+      "Tap right edge to advance timeline"
+    ],
+    "animations": {
+      "page_transition": "initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }}",
+      "stagger": "staggerChildren: 0.1"
+    }
+  },
+  "instructions_to_main_agent": [
+    "1. IMPLEMENTATION: Build this as a Mobile Web App. Wrap the entire app in a 'max-w-md mx-auto' container on desktop to simulate the phone experience.",
+    "2. THEME: Force the 'dark' class on the HTML element. Do not implement a light mode toggle.",
+    "3. FONTS: Import Playfair Display and Inter from Google Fonts in the index.css file.",
+    "4. NAVIGATION: Implement the BottomNav component to appear on all pages except the 'Onboarding' and 'Splash' screens.",
+    "5. DATA: Mock the news data. Ensure the mocked data has 'category', 'summary', 'timeline_events' (array), and 'source_url' fields.",
+    "6. DETAILS: The Story Detail page should use the 'General' image as a hero background, with the content scrolling over it.",
+    "7. UI POLISH: Use 'backdrop-filter: blur()' heavily for that premium glass feel."
+  ],
+  "UNIVERSAL_GUIDELINES": {
+    "react_strict_mode": false,
+    "toast_library": "sonner",
+    "image_handling": "Always add object-cover and w-full h-full to images to prevent distortion.",
+    "accessibility": "Ensure all text has adequate contrast against the dark background. Use aria-labels for icon-only buttons."
+  }
+}
