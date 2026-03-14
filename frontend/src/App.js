@@ -1,12 +1,51 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { Newspaper, Bookmark, Clock, ChevronLeft, ExternalLink, Sparkles, RefreshCw, Check, Zap, TrendingUp } from 'lucide-react';
+import { Newspaper, Bookmark, Clock, ChevronLeft, ExternalLink, Sparkles, RefreshCw, Check, Zap, TrendingUp, Share2, Settings, Trash2, X } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 import axios from 'axios';
 import '@/App.css';
 
 // Firebase endpoint
 const FIREBASE_ENDPOINT = 'https://us-central1-verityn-news-app.cloudfunctions.net/generateNow';
+
+// Haptic feedback utility
+const haptic = {
+  light: () => navigator.vibrate?.(10),
+  medium: () => navigator.vibrate?.(25),
+  heavy: () => navigator.vibrate?.(50),
+  success: () => navigator.vibrate?.([10, 50, 10]),
+  error: () => navigator.vibrate?.([50, 30, 50]),
+};
+
+// Share utility
+const shareStory = async (story) => {
+  haptic.light();
+  const shareData = {
+    title: story.title,
+    text: story.summary ? (Array.isArray(story.summary) ? story.summary[0] : story.summary) : story.title,
+    url: story.url || window.location.href,
+  };
+  
+  try {
+    if (navigator.share) {
+      await navigator.share(shareData);
+      haptic.success();
+      return true;
+    } else {
+      // Fallback to clipboard
+      await navigator.clipboard.writeText(`${story.title}\n\n${shareData.text}\n\n${shareData.url}`);
+      toast.success('Copied to clipboard');
+      haptic.success();
+      return true;
+    }
+  } catch (err) {
+    if (err.name !== 'AbortError') {
+      toast.error('Failed to share');
+      haptic.error();
+    }
+    return false;
+  }
+};
 
 // Category images
 const CATEGORY_IMAGES = {
@@ -157,6 +196,113 @@ const getCategoryImage = (topic) => {
   return CATEGORY_IMAGES[normalizedTopic] || CATEGORY_IMAGES.general;
 };
 
+// Pull-to-refresh hook
+const usePullToRefresh = (onRefresh, threshold = 80) => {
+  const [pullDistance, setPullDistance] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const startY = useRef(0);
+  const containerRef = useRef(null);
+
+  const handleTouchStart = (e) => {
+    if (containerRef.current?.scrollTop === 0) {
+      startY.current = e.touches[0].clientY;
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    if (startY.current === 0 || isRefreshing) return;
+    const currentY = e.touches[0].clientY;
+    const diff = currentY - startY.current;
+    if (diff > 0 && containerRef.current?.scrollTop === 0) {
+      setPullDistance(Math.min(diff * 0.5, threshold * 1.5));
+    }
+  };
+
+  const handleTouchEnd = async () => {
+    if (pullDistance >= threshold && !isRefreshing) {
+      setIsRefreshing(true);
+      haptic.medium();
+      await onRefresh();
+      setIsRefreshing(false);
+    }
+    setPullDistance(0);
+    startY.current = 0;
+  };
+
+  return {
+    containerRef,
+    pullDistance,
+    isRefreshing,
+    handlers: {
+      onTouchStart: handleTouchStart,
+      onTouchMove: handleTouchMove,
+      onTouchEnd: handleTouchEnd,
+    },
+  };
+};
+
+// Swipeable card wrapper
+const SwipeableCard = ({ children, onSwipeLeft, onSwipeRight, threshold = 100 }) => {
+  const [offset, setOffset] = useState(0);
+  const [swiping, setSwiping] = useState(false);
+  const startX = useRef(0);
+
+  const handleTouchStart = (e) => {
+    startX.current = e.touches[0].clientX;
+    setSwiping(true);
+  };
+
+  const handleTouchMove = (e) => {
+    if (!swiping) return;
+    const diff = e.touches[0].clientX - startX.current;
+    setOffset(diff);
+  };
+
+  const handleTouchEnd = () => {
+    setSwiping(false);
+    if (Math.abs(offset) >= threshold) {
+      haptic.medium();
+      if (offset > 0 && onSwipeRight) {
+        onSwipeRight();
+      } else if (offset < 0 && onSwipeLeft) {
+        onSwipeLeft();
+      }
+    }
+    setOffset(0);
+    startX.current = 0;
+  };
+
+  const getSwipeIndicator = () => {
+    if (offset > 50) return { text: 'Save', color: 'bg-blue-500', icon: '💾' };
+    if (offset < -50) return { text: 'Dismiss', color: 'bg-zinc-700', icon: '✕' };
+    return null;
+  };
+
+  const indicator = getSwipeIndicator();
+
+  return (
+    <div className="relative overflow-hidden">
+      {/* Swipe indicators */}
+      {indicator && (
+        <div className={`absolute inset-y-0 ${offset > 0 ? 'left-0' : 'right-0'} w-20 ${indicator.color} flex items-center justify-center`}>
+          <span className="text-white text-xs font-medium">{indicator.text}</span>
+        </div>
+      )}
+      <div
+        style={{ 
+          transform: `translateX(${offset}px)`,
+          transition: swiping ? 'none' : 'transform 0.3s ease-out'
+        }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        {children}
+      </div>
+    </div>
+  );
+};
+
 // Components
 const LoadingSkeleton = () => (
   <div className="space-y-6 p-5">
@@ -166,8 +312,8 @@ const LoadingSkeleton = () => (
   </div>
 );
 
-// Three-tab bottom navigation
-const BottomNav = ({ activeTab, onTabChange }) => (
+// Three-tab bottom navigation with settings
+const BottomNav = ({ activeTab, onTabChange, onSettingsClick }) => (
   <nav 
     data-testid="bottom-navigation"
     className="fixed left-1/2 -translate-x-1/2 w-full max-w-md glass-heavy border-t border-white/5"
@@ -176,40 +322,150 @@ const BottomNav = ({ activeTab, onTabChange }) => (
     <div className="flex items-center justify-around h-16">
       <button
         data-testid="nav-briefs-btn"
-        onClick={() => onTabChange('briefs')}
-        className={`flex flex-col items-center gap-1 px-6 py-2 transition-all touch-feedback ${
+        onClick={() => { haptic.light(); onTabChange('briefs'); }}
+        className={`flex flex-col items-center gap-1 px-5 py-2 transition-all touch-feedback ${
           activeTab === 'briefs' ? 'text-blue-500 scale-110' : 'text-zinc-500 hover:text-zinc-300'
         }`}
         aria-label="AI Briefs"
       >
-        <Sparkles size={22} />
+        <Sparkles size={20} />
         <span className="text-[10px] font-medium">Briefs</span>
       </button>
       <button
         data-testid="nav-latest-btn"
-        onClick={() => onTabChange('latest')}
-        className={`flex flex-col items-center gap-1 px-6 py-2 transition-all touch-feedback ${
+        onClick={() => { haptic.light(); onTabChange('latest'); }}
+        className={`flex flex-col items-center gap-1 px-5 py-2 transition-all touch-feedback ${
           activeTab === 'latest' ? 'text-blue-500 scale-110' : 'text-zinc-500 hover:text-zinc-300'
         }`}
         aria-label="Latest news"
       >
-        <TrendingUp size={22} />
+        <TrendingUp size={20} />
         <span className="text-[10px] font-medium">Latest</span>
       </button>
       <button
         data-testid="nav-saved-btn"
-        onClick={() => onTabChange('saved')}
-        className={`flex flex-col items-center gap-1 px-6 py-2 transition-all touch-feedback ${
+        onClick={() => { haptic.light(); onTabChange('saved'); }}
+        className={`flex flex-col items-center gap-1 px-5 py-2 transition-all touch-feedback ${
           activeTab === 'saved' ? 'text-blue-500 scale-110' : 'text-zinc-500 hover:text-zinc-300'
         }`}
         aria-label="Saved articles"
       >
-        <Bookmark size={22} />
+        <Bookmark size={20} />
         <span className="text-[10px] font-medium">Saved</span>
+      </button>
+      <button
+        data-testid="nav-settings-btn"
+        onClick={() => { haptic.light(); onSettingsClick(); }}
+        className="flex flex-col items-center gap-1 px-5 py-2 transition-all touch-feedback text-zinc-500 hover:text-zinc-300"
+        aria-label="Settings"
+      >
+        <Settings size={20} />
+        <span className="text-[10px] font-medium">Settings</span>
       </button>
     </div>
   </nav>
 );
+
+// Settings Modal
+const SettingsModal = ({ isOpen, onClose, userTopics, onTopicsChange, onClearCache, onClearSaved }) => {
+  const [selectedTopics, setSelectedTopics] = useState(userTopics);
+  const allTopics = ['AI', 'Technology', 'Business', 'Science', 'Geopolitics', 'Energy', 'Climate', 'Sports'];
+  
+  if (!isOpen) return null;
+  
+  const toggleTopic = (topic) => {
+    haptic.light();
+    setSelectedTopics(prev => 
+      prev.includes(topic) ? prev.filter(t => t !== topic) : [...prev, topic]
+    );
+  };
+  
+  const handleSave = () => {
+    haptic.success();
+    onTopicsChange(selectedTopics);
+    toast.success('Settings saved');
+    onClose();
+  };
+  
+  const handleClearCache = () => {
+    haptic.medium();
+    onClearCache();
+    toast.success('Cache cleared');
+  };
+  
+  const handleClearSaved = () => {
+    haptic.heavy();
+    onClearSaved();
+    toast.success('Saved articles cleared');
+  };
+  
+  return (
+    <div className="fixed inset-0 z-[10000] flex items-end justify-center">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div 
+        data-testid="settings-modal"
+        className="relative w-full max-w-md bg-zinc-900 rounded-t-3xl p-6 pb-20 animate-slide-up"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold text-white">Settings</h2>
+          <button 
+            onClick={onClose}
+            className="p-2 rounded-full bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
+          >
+            <X size={20} />
+          </button>
+        </div>
+        
+        {/* Topics */}
+        <div className="mb-6">
+          <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3">Your Topics</h3>
+          <div className="flex flex-wrap gap-2">
+            {allTopics.map(topic => (
+              <button
+                key={topic}
+                onClick={() => toggleTopic(topic)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all touch-feedback ${
+                  selectedTopics.includes(topic)
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-zinc-800 text-zinc-400 border border-zinc-700'
+                }`}
+              >
+                {topic}
+              </button>
+            ))}
+          </div>
+        </div>
+        
+        {/* Actions */}
+        <div className="space-y-3 mb-6">
+          <button
+            onClick={handleClearCache}
+            className="w-full flex items-center gap-3 p-4 rounded-xl bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors"
+          >
+            <RefreshCw size={20} />
+            <span className="text-sm font-medium">Refresh Data</span>
+          </button>
+          <button
+            onClick={handleClearSaved}
+            className="w-full flex items-center gap-3 p-4 rounded-xl bg-zinc-800 text-red-400 hover:bg-zinc-700 transition-colors"
+          >
+            <Trash2 size={20} />
+            <span className="text-sm font-medium">Clear Saved Articles</span>
+          </button>
+        </div>
+        
+        {/* Save Button */}
+        <button
+          onClick={handleSave}
+          className="w-full py-4 rounded-xl bg-blue-500 text-white font-semibold hover:bg-blue-600 transition-colors touch-feedback"
+        >
+          Save Changes
+        </button>
+      </div>
+    </div>
+  );
+};
 
 // AI Brief Card - premium look for curated stories
 const BriefCard = ({ story, onSave, isSaved, onClick, index }) => (
@@ -341,46 +597,78 @@ const LatestNewsItem = ({ article, onSave, isSaved, onClick, index }) => (
   </div>
 );
 
-// Briefs Tab - AI curated stories
-const BriefsTab = ({ briefs, loading, onRefresh, savedIds, onSave, onStoryClick }) => (
-  <div data-testid="briefs-tab" className="pb-32">
-    {/* Header */}
-    <div className="sticky top-0 z-40 glass-heavy">
-      <div className="flex items-center justify-between px-5 py-4 pt-10">
-        <div>
-          <h1 className="font-serif text-2xl font-bold text-white">Briefs</h1>
-          <p className="text-xs text-zinc-500 mt-0.5">AI-curated story intelligence</p>
+// Briefs Tab - AI curated stories with pull-to-refresh and swipe gestures
+const BriefsTab = ({ briefs, loading, onRefresh, savedIds, onSave, onStoryClick, onDismiss }) => {
+  const { containerRef, pullDistance, isRefreshing, handlers } = usePullToRefresh(onRefresh);
+  
+  return (
+    <div 
+      data-testid="briefs-tab" 
+      className="pb-32 min-h-screen"
+      ref={containerRef}
+      {...handlers}
+    >
+      {/* Pull indicator */}
+      <div 
+        className="flex items-center justify-center transition-all overflow-hidden"
+        style={{ height: pullDistance > 0 ? pullDistance : 0 }}
+      >
+        <div className={`flex items-center gap-2 ${pullDistance > 60 ? 'text-blue-400' : 'text-zinc-500'}`}>
+          <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
+          <span className="text-xs font-medium">
+            {isRefreshing ? 'Refreshing...' : pullDistance > 60 ? 'Release to refresh' : 'Pull to refresh'}
+          </span>
         </div>
-        <button
-          data-testid="refresh-briefs-btn"
-          onClick={onRefresh}
-          disabled={loading}
-          className="p-2 rounded-full text-zinc-400 hover:text-white transition-colors touch-feedback"
-          aria-label="Refresh"
-        >
-          <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
-        </button>
       </div>
+      
+      {/* Header */}
+      <div className="sticky top-0 z-40 glass-heavy">
+        <div className="flex items-center justify-between px-5 py-4 pt-10">
+          <div>
+            <h1 className="font-serif text-2xl font-bold text-white">Briefs</h1>
+            <p className="text-xs text-zinc-500 mt-0.5">AI-curated story intelligence</p>
+          </div>
+          <button
+            data-testid="refresh-briefs-btn"
+            onClick={() => { haptic.light(); onRefresh(); }}
+            disabled={loading || isRefreshing}
+            className="p-2 rounded-full text-zinc-400 hover:text-white transition-colors touch-feedback"
+            aria-label="Refresh"
+          >
+            <RefreshCw size={18} className={(loading || isRefreshing) ? 'animate-spin' : ''} />
+          </button>
+        </div>
+      </div>
+      
+      {/* Swipe hint (show once) */}
+      <div className="px-5 py-2 text-center">
+        <p className="text-[10px] text-zinc-600">← Swipe left to dismiss • Swipe right to save →</p>
+      </div>
+      
+      {loading && briefs.length === 0 ? (
+        <LoadingSkeleton />
+      ) : (
+        <div className="mt-2">
+          {briefs.map((story, idx) => (
+            <SwipeableCard
+              key={story.id || idx}
+              onSwipeRight={() => { onSave(story); toast.success('Saved'); }}
+              onSwipeLeft={() => { onDismiss?.(story); toast('Dismissed'); }}
+            >
+              <BriefCard
+                story={story}
+                index={idx}
+                onSave={onSave}
+                isSaved={savedIds.has(story.url || story.id)}
+                onClick={() => onStoryClick(story)}
+              />
+            </SwipeableCard>
+          ))}
+        </div>
+      )}
     </div>
-    
-    {loading && briefs.length === 0 ? (
-      <LoadingSkeleton />
-    ) : (
-      <div className="mt-2">
-        {briefs.map((story, idx) => (
-          <BriefCard
-            key={story.id || idx}
-            story={story}
-            index={idx}
-            onSave={onSave}
-            isSaved={savedIds.has(story.url || story.id)}
-            onClick={() => onStoryClick(story)}
-          />
-        ))}
-      </div>
-    )}
-  </div>
-);
+  );
+};
 
 // Latest Tab - chronological news feed
 const LatestTab = ({ articles, loading, onRefresh, savedIds, onSave, onArticleClick }) => (
@@ -476,24 +764,37 @@ const StoryDetail = ({ story, onBack, onSave, isSaved }) => {
         {/* Back button */}
         <button
           data-testid="back-btn"
-          onClick={onBack}
+          onClick={() => { haptic.light(); onBack(); }}
           className="absolute top-10 left-4 p-2 rounded-full bg-black/40 backdrop-blur-sm text-white touch-feedback"
           aria-label="Go back"
         >
           <ChevronLeft size={20} />
         </button>
         
-        {/* Save button */}
-        <button
-          data-testid="detail-save-btn"
-          onClick={() => onSave(story)}
-          className={`absolute top-10 right-4 p-2 rounded-full transition-all touch-feedback ${
-            isSaved ? 'bg-blue-500 text-white' : 'bg-black/40 backdrop-blur-sm text-white'
-          }`}
-          aria-label={isSaved ? 'Saved' : 'Save'}
-        >
-          {isSaved ? <Check size={18} /> : <Bookmark size={18} />}
-        </button>
+        {/* Action buttons */}
+        <div className="absolute top-10 right-4 flex items-center gap-2">
+          {/* Share button */}
+          <button
+            data-testid="share-btn"
+            onClick={() => shareStory(story)}
+            className="p-2 rounded-full bg-black/40 backdrop-blur-sm text-white hover:bg-black/60 transition-all touch-feedback"
+            aria-label="Share story"
+          >
+            <Share2 size={18} />
+          </button>
+          
+          {/* Save button */}
+          <button
+            data-testid="detail-save-btn"
+            onClick={() => { haptic.light(); onSave(story); }}
+            className={`p-2 rounded-full transition-all touch-feedback ${
+              isSaved ? 'bg-blue-500 text-white' : 'bg-black/40 backdrop-blur-sm text-white'
+            }`}
+            aria-label={isSaved ? 'Saved' : 'Save'}
+          >
+            {isSaved ? <Check size={18} /> : <Bookmark size={18} />}
+          </button>
+        </div>
       </div>
       
       {/* Content */}
@@ -679,20 +980,29 @@ const AppContent = () => {
     return saved ? JSON.parse(saved) : [];
   });
   const [selectedStory, setSelectedStory] = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [dismissedIds, setDismissedIds] = useState(new Set());
+  const [userTopics, setUserTopics] = useState(() => {
+    const topics = localStorage.getItem('verityn_topics');
+    return topics ? JSON.parse(topics) : [];
+  });
   
   const savedIds = new Set(savedStories.map(s => s.url || s.id));
+  
+  // Filter out dismissed briefs
+  const visibleBriefs = briefs.filter(b => !dismissedIds.has(b.id));
   
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       // Get user's selected topics for personalized feed
       const userTopicsStr = localStorage.getItem('verityn_topics');
-      const userTopics = userTopicsStr ? JSON.parse(userTopicsStr) : [];
+      const topics = userTopicsStr ? JSON.parse(userTopicsStr) : [];
       
       // Send user topics to backend for personalization
       const params = new URLSearchParams();
-      if (userTopics.length > 0) {
-        params.append('userTopics', userTopics.join(','));
+      if (topics.length > 0) {
+        params.append('userTopics', topics.join(','));
       }
       
       const url = `${FIREBASE_ENDPOINT}${params.toString() ? '?' + params.toString() : ''}`;
@@ -711,9 +1021,15 @@ const AppContent = () => {
           image: s.image || getCategoryImage(s.topic),
           timeline: s.timeline || [],
           importance: s.importance || 50,
-          articleCount: s.articleCount || s.clusterArticles?.length || 3
+          articleCount: s.articleCount || s.clusterArticles?.length || 3,
+          sourceCount: s.sourceCount || 1,
+          credibility: s.credibility || 'MEDIUM',
+          isBreaking: s.isBreaking || false,
+          breakingLabel: s.breakingLabel,
+          relatedStories: s.relatedStories || []
         }));
         setBriefs(formattedBriefs);
+        setDismissedIds(new Set()); // Reset dismissed on refresh
       }
       
       if (data.feed && data.feed.length > 0) {
@@ -747,6 +1063,7 @@ const AppContent = () => {
   }, [savedStories]);
   
   const handleSave = (story) => {
+    haptic.light();
     const storyKey = story.url || story.id;
     if (savedIds.has(storyKey)) {
       setSavedStories(prev => prev.filter(s => (s.url || s.id) !== storyKey));
@@ -756,12 +1073,35 @@ const AppContent = () => {
     }
   };
   
+  const handleDismiss = (story) => {
+    setDismissedIds(prev => new Set([...prev, story.id]));
+  };
+  
   const handleStoryClick = (story) => {
+    haptic.light();
     setSelectedStory(story);
   };
   
   const handleBack = () => {
     setSelectedStory(null);
+  };
+  
+  const handleTopicsChange = (newTopics) => {
+    setUserTopics(newTopics);
+    localStorage.setItem('verityn_topics', JSON.stringify(newTopics));
+    fetchData(); // Refresh with new topics
+  };
+  
+  const handleClearCache = () => {
+    setBriefs(MOCK_BRIEFS);
+    setLatestNews(MOCK_LATEST);
+    setDismissedIds(new Set());
+    fetchData();
+  };
+  
+  const handleClearSaved = () => {
+    setSavedStories([]);
+    localStorage.removeItem('verityn_saved');
   };
   
   if (!isOnboarded) {
@@ -783,12 +1123,13 @@ const AppContent = () => {
     <>
       {activeTab === 'briefs' && (
         <BriefsTab 
-          briefs={briefs}
+          briefs={visibleBriefs}
           loading={loading}
           onRefresh={fetchData}
           savedIds={savedIds}
           onSave={handleSave}
           onStoryClick={handleStoryClick}
+          onDismiss={handleDismiss}
         />
       )}
       {activeTab === 'latest' && (
@@ -808,7 +1149,19 @@ const AppContent = () => {
           onRemove={handleSave}
         />
       )}
-      <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+      <BottomNav 
+        activeTab={activeTab} 
+        onTabChange={setActiveTab} 
+        onSettingsClick={() => setShowSettings(true)}
+      />
+      <SettingsModal
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        userTopics={userTopics}
+        onTopicsChange={handleTopicsChange}
+        onClearCache={handleClearCache}
+        onClearSaved={handleClearSaved}
+      />
     </>
   );
 };
