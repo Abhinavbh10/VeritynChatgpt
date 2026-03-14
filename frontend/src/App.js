@@ -142,14 +142,14 @@ const LoadingSkeleton = () => (
 const BottomNav = ({ activeTab, onTabChange }) => (
   <nav 
     data-testid="bottom-navigation"
-    className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md glass-heavy border-t border-white/5"
-    style={{ zIndex: 9999 }}
+    className="fixed left-1/2 -translate-x-1/2 w-full max-w-md glass-heavy border-t border-white/5"
+    style={{ zIndex: 9999, bottom: '50px' }}
   >
-    <div className="flex items-center justify-around h-20 pb-4">
+    <div className="flex items-center justify-around h-16">
       <button
         data-testid="nav-home-btn"
         onClick={() => onTabChange('home')}
-        className={`flex flex-col items-center gap-1 px-8 py-3 transition-all touch-feedback ${
+        className={`flex flex-col items-center gap-1 px-10 py-3 transition-all touch-feedback ${
           activeTab === 'home' ? 'text-blue-500 scale-110' : 'text-zinc-500 hover:text-zinc-300'
         }`}
         aria-label="Home feed"
@@ -160,7 +160,7 @@ const BottomNav = ({ activeTab, onTabChange }) => (
       <button
         data-testid="nav-saved-btn"
         onClick={() => onTabChange('saved')}
-        className={`flex flex-col items-center gap-1 px-8 py-3 transition-all touch-feedback ${
+        className={`flex flex-col items-center gap-1 px-10 py-3 transition-all touch-feedback ${
           activeTab === 'saved' ? 'text-blue-500 scale-110' : 'text-zinc-500 hover:text-zinc-300'
         }`}
         aria-label="Saved articles"
@@ -371,7 +371,7 @@ const HomeFeed = ({ stories, loading, onRefresh, savedIds, onSave, onStoryClick 
   const otherStories = filteredStories.slice(1);
   
   return (
-    <div data-testid="home-feed" className="pb-24">
+    <div data-testid="home-feed" className="pb-32">
       {/* Header */}
       <div className="sticky top-0 z-40 glass-heavy pt-safe">
         <div className="flex items-center justify-between px-5 py-4">
@@ -542,7 +542,7 @@ const StoryDetail = ({ story, onBack, onSave, isSaved }) => {
 };
 
 const SavedScreen = ({ savedStories, onStoryClick, onRemove }) => (
-  <div data-testid="saved-screen" className="min-h-screen pb-28">
+  <div data-testid="saved-screen" className="min-h-screen pb-32">
     <div className="sticky top-0 z-40 glass-heavy px-5 py-5 pt-12">
       <h1 className="font-serif text-2xl font-bold text-white">Saved</h1>
       <p className="text-sm text-zinc-500 mt-1">{savedStories.length} article{savedStories.length !== 1 ? 's' : ''}</p>
