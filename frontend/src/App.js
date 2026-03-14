@@ -35,9 +35,10 @@ const MOCK_BRIEFS = [
     importance: 95,
     articleCount: 12,
     timeline: [
-      { time: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(), title: 'Sam Altman confirms GPT-5 deployment timeline', source: 'Reuters', url: '#' },
-      { time: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(), title: 'OpenAI begins enterprise rollout of new model', source: 'Bloomberg', url: '#' },
-      { time: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(), title: 'Initial benchmark results show 40% improvement', source: 'The Verge', url: '#' },
+      { time: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(), timeLabel: '6:00 AM', title: 'OpenAI sends press invites for major announcement', source: 'The Verge', url: '#' },
+      { time: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), timeLabel: '9:00 AM', gap: '3 hours later', title: 'GPT-5 officially announced at press event', source: 'TechCrunch', url: '#' },
+      { time: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(), timeLabel: '11:00 AM', gap: '2 hours later', title: 'First benchmarks show 40% reasoning improvement', source: 'Bloomberg', url: '#' },
+      { time: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(), timeLabel: '1:00 PM', gap: '2 hours later', title: 'Microsoft confirms Azure integration coming next week', source: 'Reuters', url: '#' },
     ]
   },
   {
@@ -52,8 +53,9 @@ const MOCK_BRIEFS = [
     importance: 88,
     articleCount: 8,
     timeline: [
-      { time: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), title: 'Powell speaks at Jackson Hole symposium', source: 'CNBC', url: '#' },
-      { time: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), title: 'Inflation data comes in below expectations', source: 'WSJ', url: '#' },
+      { time: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(), timeLabel: 'Yesterday', title: 'Labor Department releases softer jobs data', source: 'WSJ', url: '#' },
+      { time: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), timeLabel: '9:30 AM', gap: 'Next day', title: 'Powell hints at policy shift in prepared remarks', source: 'CNBC', url: '#' },
+      { time: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), timeLabel: '12:00 PM', gap: '2 hours later', title: 'Markets rally as traders price in rate cuts', source: 'Bloomberg', url: '#' },
     ]
   },
   {
@@ -68,8 +70,10 @@ const MOCK_BRIEFS = [
     importance: 92,
     articleCount: 15,
     timeline: [
-      { time: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), title: 'Starship successfully lands after orbital insertion', source: 'Space.com', url: '#' },
-      { time: new Date(Date.now() - 7 * 60 * 60 * 1000).toISOString(), title: 'Super Heavy booster achieves controlled landing', source: 'Reuters', url: '#' },
+      { time: new Date(Date.now() - 10 * 60 * 60 * 1000).toISOString(), timeLabel: '4:00 AM', title: 'Starship lifts off from Boca Chica launch site', source: 'SpaceX', url: '#' },
+      { time: new Date(Date.now() - 9 * 60 * 60 * 1000).toISOString(), timeLabel: '5:00 AM', gap: '1 hour later', title: 'Super Heavy booster successfully lands on drone ship', source: 'NASA Spaceflight', url: '#' },
+      { time: new Date(Date.now() - 7 * 60 * 60 * 1000).toISOString(), timeLabel: '7:00 AM', gap: '2 hours later', title: 'Starship achieves stable orbit insertion', source: 'Reuters', url: '#' },
+      { time: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), timeLabel: '10:00 AM', gap: '3 hours later', title: 'Elon Musk confirms full mission success', source: 'BBC', url: '#' },
     ]
   },
   {
@@ -491,18 +495,34 @@ const StoryDetail = ({ story, onBack, onSave, isSaved }) => {
         {/* Timeline */}
         {story.timeline && story.timeline.length > 0 && (
           <div className="mb-6">
-            <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-4">Timeline</h3>
-            <div className="relative pl-6 border-l-2 border-zinc-800 ml-1 space-y-4">
+            <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-4">
+              Story Timeline
+            </h3>
+            <div className="relative pl-6 border-l-2 border-zinc-800 ml-1 space-y-1">
               {story.timeline.map((event, idx) => (
-                <div key={idx} className="relative animate-slide-in" style={{ animationDelay: `${idx * 80}ms` }}>
-                  <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-blue-500 ring-4 ring-zinc-950" />
-                  <div className="bg-zinc-900/50 p-3 rounded-lg border border-white/5">
-                    <p className="text-[10px] text-zinc-500 mb-1 flex items-center gap-1">
-                      <Clock size={9} />
-                      {timeAgo(event.time)}
-                    </p>
-                    <p className="text-xs text-white font-medium mb-0.5">{event.title}</p>
-                    <p className="text-[10px] text-zinc-500">{event.source}</p>
+                <div key={idx} className="relative animate-slide-in" style={{ animationDelay: `${idx * 100}ms` }}>
+                  {/* Time gap label */}
+                  {event.gap && (
+                    <div className="flex items-center gap-2 py-2 -ml-6 pl-6">
+                      <div className="h-px flex-1 bg-zinc-800" />
+                      <span className="text-[9px] text-zinc-600 uppercase tracking-wide px-2">{event.gap}</span>
+                      <div className="h-px flex-1 bg-zinc-800" />
+                    </div>
+                  )}
+                  
+                  {/* Timeline node */}
+                  <div className="relative pb-4">
+                    <div className="absolute -left-[21px] top-1.5 w-2.5 h-2.5 rounded-full bg-blue-500 ring-4 ring-zinc-950" />
+                    <div className="bg-zinc-900/50 p-3 rounded-lg border border-white/5 hover:border-white/10 transition-colors">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span className="text-[10px] text-blue-400 font-medium">
+                          {event.timeLabel || timeAgo(event.time)}
+                        </span>
+                        <span className="text-zinc-700">•</span>
+                        <span className="text-[10px] text-zinc-500">{event.source}</span>
+                      </div>
+                      <p className="text-xs text-white font-medium leading-snug">{event.title}</p>
+                    </div>
                   </div>
                 </div>
               ))}
