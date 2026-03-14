@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-import { Newspaper, Bookmark, Clock, ChevronLeft, ExternalLink, Sparkles, RefreshCw, Check } from 'lucide-react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Newspaper, Bookmark, Clock, ChevronLeft, ExternalLink, Sparkles, RefreshCw, Check, Zap, TrendingUp } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 import axios from 'axios';
 import '@/App.css';
@@ -8,7 +8,7 @@ import '@/App.css';
 // Firebase endpoint
 const FIREBASE_ENDPOINT = 'https://us-central1-verityn-news-app.cloudfunctions.net/generateNow';
 
-// Category images from design guidelines
+// Category images
 const CATEGORY_IMAGES = {
   technology: 'https://images.unsplash.com/photo-1760978632114-0939f0d60045?w=800&q=80',
   business: 'https://images.unsplash.com/photo-1741742266218-4b3a46e4f3a0?w=800&q=80',
@@ -21,8 +21,8 @@ const CATEGORY_IMAGES = {
   climate: 'https://images.unsplash.com/photo-1569163139599-0f4517e36f51?w=800&q=80',
 };
 
-// Mock data for initial display
-const MOCK_STORIES = [
+// Mock AI Briefs - curated, summarized stories
+const MOCK_BRIEFS = [
   {
     id: 1,
     title: 'OpenAI Unveils GPT-5 with Revolutionary Reasoning Capabilities',
@@ -33,6 +33,7 @@ const MOCK_STORIES = [
     url: 'https://techcrunch.com',
     image: CATEGORY_IMAGES.ai,
     importance: 95,
+    articleCount: 12,
     timeline: [
       { time: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(), title: 'Sam Altman confirms GPT-5 deployment timeline', source: 'Reuters', url: '#' },
       { time: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(), title: 'OpenAI begins enterprise rollout of new model', source: 'Bloomberg', url: '#' },
@@ -49,6 +50,7 @@ const MOCK_STORIES = [
     url: 'https://ft.com',
     image: CATEGORY_IMAGES.business,
     importance: 88,
+    articleCount: 8,
     timeline: [
       { time: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), title: 'Powell speaks at Jackson Hole symposium', source: 'CNBC', url: '#' },
       { time: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), title: 'Inflation data comes in below expectations', source: 'WSJ', url: '#' },
@@ -64,6 +66,7 @@ const MOCK_STORIES = [
     url: 'https://bbc.com',
     image: CATEGORY_IMAGES.science,
     importance: 92,
+    articleCount: 15,
     timeline: [
       { time: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), title: 'Starship successfully lands after orbital insertion', source: 'Space.com', url: '#' },
       { time: new Date(Date.now() - 7 * 60 * 60 * 1000).toISOString(), title: 'Super Heavy booster achieves controlled landing', source: 'Reuters', url: '#' },
@@ -79,6 +82,7 @@ const MOCK_STORIES = [
     url: 'https://theguardian.com',
     image: CATEGORY_IMAGES.technology,
     importance: 85,
+    articleCount: 6,
     timeline: [
       { time: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(), title: 'EU Parliament votes in favor of AI Act', source: 'Politico', url: '#' },
       { time: new Date(Date.now() - 10 * 60 * 60 * 1000).toISOString(), title: 'Tech industry responds to new regulations', source: 'TechCrunch', url: '#' },
@@ -94,6 +98,7 @@ const MOCK_STORIES = [
     url: 'https://aljazeera.com',
     image: CATEGORY_IMAGES.climate,
     importance: 82,
+    articleCount: 9,
     timeline: [
       { time: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(), title: 'China and US announce joint climate initiative', source: 'NYT', url: '#' },
       { time: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(), title: 'Draft agreement circulated among delegates', source: 'BBC', url: '#' },
@@ -101,12 +106,29 @@ const MOCK_STORIES = [
   },
 ];
 
+// Mock Latest News - raw chronological feed
+const MOCK_LATEST = [
+  { id: 101, title: 'Apple announces new MacBook Pro with M4 chip', source: 'The Verge', published: new Date(Date.now() - 30 * 60 * 1000).toISOString(), topic: 'Technology', url: '#', image: CATEGORY_IMAGES.technology },
+  { id: 102, title: 'Bitcoin surges past $100,000 as institutional demand grows', source: 'Bloomberg', published: new Date(Date.now() - 45 * 60 * 1000).toISOString(), topic: 'Business', url: '#', image: CATEGORY_IMAGES.business },
+  { id: 103, title: 'NASA confirms water ice deposits on Moon\'s south pole', source: 'Space.com', published: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(), topic: 'Science', url: '#', image: CATEGORY_IMAGES.science },
+  { id: 104, title: 'Google DeepMind achieves breakthrough in protein folding', source: 'Nature', published: new Date(Date.now() - 1.5 * 60 * 60 * 1000).toISOString(), topic: 'AI', url: '#', image: CATEGORY_IMAGES.ai },
+  { id: 105, title: 'Tesla delivers record number of vehicles in Q4', source: 'Reuters', published: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), topic: 'Business', url: '#', image: CATEGORY_IMAGES.business },
+  { id: 106, title: 'World Cup 2026 venue cities announced', source: 'ESPN', published: new Date(Date.now() - 2.5 * 60 * 60 * 1000).toISOString(), topic: 'Sports', url: '#', image: CATEGORY_IMAGES.sports },
+  { id: 107, title: 'Microsoft acquires gaming studio for $2 billion', source: 'CNBC', published: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(), topic: 'Technology', url: '#', image: CATEGORY_IMAGES.technology },
+  { id: 108, title: 'New COVID variant detected in Southeast Asia', source: 'WHO', published: new Date(Date.now() - 3.5 * 60 * 60 * 1000).toISOString(), topic: 'Science', url: '#', image: CATEGORY_IMAGES.science },
+  { id: 109, title: 'Amazon expands drone delivery to 10 new cities', source: 'TechCrunch', published: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), topic: 'Technology', url: '#', image: CATEGORY_IMAGES.technology },
+  { id: 110, title: 'Oil prices drop amid OPEC production increase', source: 'Financial Times', published: new Date(Date.now() - 4.5 * 60 * 60 * 1000).toISOString(), topic: 'Energy', url: '#', image: CATEGORY_IMAGES.energy },
+  { id: 111, title: 'Meta unveils new AR glasses prototype', source: 'Wired', published: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), topic: 'Technology', url: '#', image: CATEGORY_IMAGES.technology },
+  { id: 112, title: 'Champions League quarterfinal draw results', source: 'BBC Sport', published: new Date(Date.now() - 5.5 * 60 * 60 * 1000).toISOString(), topic: 'Sports', url: '#', image: CATEGORY_IMAGES.sports },
+];
+
 // Utility functions
 const timeAgo = (dateString) => {
   if (!dateString) return 'Recently';
   const diff = Date.now() - new Date(dateString).getTime();
+  const mins = Math.floor(diff / (1000 * 60));
+  if (mins < 60) return `${mins}m ago`;
   const hours = Math.floor(diff / (1000 * 60 * 60));
-  if (hours < 1) return 'Just now';
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
   return `${days}d ago`;
@@ -120,25 +142,13 @@ const getCategoryImage = (topic) => {
 // Components
 const LoadingSkeleton = () => (
   <div className="space-y-6 p-5">
-    <div className="skeleton h-80 rounded-3xl" />
-    <div className="flex gap-3 overflow-hidden">
-      {[1, 2, 3, 4].map(i => (
-        <div key={i} className="skeleton h-10 w-24 rounded-full flex-shrink-0" />
-      ))}
-    </div>
-    {[1, 2, 3].map(i => (
-      <div key={i} className="flex gap-4">
-        <div className="skeleton w-28 h-20 rounded-xl flex-shrink-0" />
-        <div className="flex-1 space-y-2">
-          <div className="skeleton h-4 w-full rounded" />
-          <div className="skeleton h-4 w-3/4 rounded" />
-          <div className="skeleton h-3 w-1/2 rounded" />
-        </div>
-      </div>
-    ))}
+    <div className="skeleton h-64 rounded-3xl" />
+    <div className="skeleton h-48 rounded-2xl" />
+    <div className="skeleton h-48 rounded-2xl" />
   </div>
 );
 
+// Three-tab bottom navigation
 const BottomNav = ({ activeTab, onTabChange }) => (
   <nav 
     data-testid="bottom-navigation"
@@ -147,166 +157,385 @@ const BottomNav = ({ activeTab, onTabChange }) => (
   >
     <div className="flex items-center justify-around h-16">
       <button
-        data-testid="nav-home-btn"
-        onClick={() => onTabChange('home')}
-        className={`flex flex-col items-center gap-1 px-10 py-3 transition-all touch-feedback ${
-          activeTab === 'home' ? 'text-blue-500 scale-110' : 'text-zinc-500 hover:text-zinc-300'
+        data-testid="nav-briefs-btn"
+        onClick={() => onTabChange('briefs')}
+        className={`flex flex-col items-center gap-1 px-6 py-2 transition-all touch-feedback ${
+          activeTab === 'briefs' ? 'text-blue-500 scale-110' : 'text-zinc-500 hover:text-zinc-300'
         }`}
-        aria-label="Home feed"
+        aria-label="AI Briefs"
       >
-        <Newspaper size={24} />
-        <span className="text-xs font-medium">Feed</span>
+        <Sparkles size={22} />
+        <span className="text-[10px] font-medium">Briefs</span>
+      </button>
+      <button
+        data-testid="nav-latest-btn"
+        onClick={() => onTabChange('latest')}
+        className={`flex flex-col items-center gap-1 px-6 py-2 transition-all touch-feedback ${
+          activeTab === 'latest' ? 'text-blue-500 scale-110' : 'text-zinc-500 hover:text-zinc-300'
+        }`}
+        aria-label="Latest news"
+      >
+        <TrendingUp size={22} />
+        <span className="text-[10px] font-medium">Latest</span>
       </button>
       <button
         data-testid="nav-saved-btn"
         onClick={() => onTabChange('saved')}
-        className={`flex flex-col items-center gap-1 px-10 py-3 transition-all touch-feedback ${
+        className={`flex flex-col items-center gap-1 px-6 py-2 transition-all touch-feedback ${
           activeTab === 'saved' ? 'text-blue-500 scale-110' : 'text-zinc-500 hover:text-zinc-300'
         }`}
         aria-label="Saved articles"
       >
-        <Bookmark size={24} />
-        <span className="text-xs font-medium">Saved</span>
+        <Bookmark size={22} />
+        <span className="text-[10px] font-medium">Saved</span>
       </button>
     </div>
   </nav>
 );
 
-const CategoryPills = ({ categories, activeCategory, onSelect }) => (
-  <div className="flex gap-3 overflow-x-auto hide-scrollbar px-5 py-3">
-    {categories.map((cat, idx) => (
-      <button
-        key={cat}
-        data-testid={`category-${cat.toLowerCase()}`}
-        onClick={() => onSelect(cat)}
-        className={`category-pill px-5 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-all touch-feedback animate-fade-in ${
-          activeCategory === cat
-            ? 'active'
-            : 'bg-zinc-900/80 text-zinc-400 border border-zinc-800 hover:border-zinc-700'
-        }`}
-        style={{ animationDelay: `${idx * 50}ms` }}
-      >
-        {cat}
-      </button>
-    ))}
-  </div>
-);
-
-const TopStoryCard = ({ story, onSave, isSaved, onClick }) => (
+// AI Brief Card - premium look for curated stories
+const BriefCard = ({ story, onSave, isSaved, onClick, index }) => (
   <div
-    data-testid="top-story-card"
-    className="relative mx-5 rounded-3xl overflow-hidden story-card cursor-pointer touch-feedback"
+    data-testid={`brief-card-${index}`}
+    className="relative rounded-2xl overflow-hidden cursor-pointer touch-feedback animate-fade-in-up mx-5 mb-4"
+    style={{ animationDelay: `${index * 100}ms` }}
     onClick={onClick}
   >
-    <div className="aspect-[4/5] relative">
+    <div className="relative aspect-[16/10]">
       <img
         src={story.image || getCategoryImage(story.topic)}
         alt={story.title}
-        className="absolute inset-0 w-full h-full object-cover story-image transition-transform duration-700"
-        loading="eager"
+        className="absolute inset-0 w-full h-full object-cover"
+        loading={index < 2 ? 'eager' : 'lazy'}
       />
-      <div className="absolute inset-0 card-gradient" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
       
       {/* AI Badge */}
-      <div className="absolute top-4 left-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/20 border border-blue-500/30 backdrop-blur-sm">
-        <Sparkles size={12} className="text-blue-400" />
-        <span className="text-[10px] font-semibold text-blue-300 uppercase tracking-wider">AI Summary</span>
+      <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-500/20 border border-blue-500/30 backdrop-blur-sm">
+        <Sparkles size={10} className="text-blue-400" />
+        <span className="text-[9px] font-bold text-blue-300 uppercase tracking-wider">AI Brief</span>
       </div>
+      
+      {/* Article count badge */}
+      {story.articleCount && (
+        <div className="absolute top-3 right-12 flex items-center gap-1 px-2 py-1 rounded-full bg-white/10 backdrop-blur-sm">
+          <Newspaper size={10} className="text-zinc-300" />
+          <span className="text-[9px] font-medium text-zinc-300">{story.articleCount} sources</span>
+        </div>
+      )}
       
       {/* Save button */}
       <button
-        data-testid="save-top-story-btn"
+        data-testid={`save-brief-${index}-btn`}
         onClick={(e) => { e.stopPropagation(); onSave(story); }}
-        className={`absolute top-4 right-4 p-2.5 rounded-full transition-all touch-feedback ${
-          isSaved 
-            ? 'bg-blue-500 text-white' 
-            : 'bg-black/40 backdrop-blur-sm text-white hover:bg-black/60'
+        className={`absolute top-3 right-3 p-2 rounded-full transition-all ${
+          isSaved ? 'bg-blue-500 text-white' : 'bg-black/40 backdrop-blur-sm text-white hover:bg-black/60'
         }`}
-        aria-label={isSaved ? 'Saved' : 'Save article'}
+        aria-label={isSaved ? 'Saved' : 'Save'}
       >
-        {isSaved ? <Check size={18} /> : <Bookmark size={18} />}
+        {isSaved ? <Check size={14} /> : <Bookmark size={14} />}
       </button>
       
       {/* Content */}
-      <div className="absolute bottom-0 left-0 right-0 p-6 space-y-3">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-blue-400 uppercase tracking-wider">{story.topic}</span>
+      <div className="absolute bottom-0 left-0 right-0 p-4">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-[10px] font-semibold text-blue-400 uppercase tracking-wider">{story.topic}</span>
           <span className="text-zinc-600">•</span>
-          <span className="text-xs text-zinc-500">{story.source}</span>
+          <span className="text-[10px] text-zinc-400">{story.source}</span>
+          <span className="text-zinc-600">•</span>
+          <span className="text-[10px] text-zinc-500">{timeAgo(story.published)}</span>
         </div>
         
-        <h2 className="font-serif text-2xl md:text-3xl font-bold leading-tight text-white">
+        <h3 className="font-serif text-lg font-bold leading-tight text-white mb-2 line-clamp-2">
           {story.title}
-        </h2>
+        </h3>
         
         {story.summary && (
-          <p className="text-sm text-zinc-300 leading-relaxed line-clamp-3">
+          <p className="text-xs text-zinc-300 leading-relaxed line-clamp-2">
             {Array.isArray(story.summary) ? story.summary[0] : story.summary}
           </p>
         )}
-        
-        <div className="flex items-center gap-2 text-zinc-500 text-xs">
-          <Clock size={12} />
-          <span>{timeAgo(story.published)}</span>
-        </div>
       </div>
     </div>
   </div>
 );
 
-const StoryListItem = ({ story, onSave, isSaved, onClick, index }) => (
+// Latest news item - compact list style
+const LatestNewsItem = ({ article, onSave, isSaved, onClick, index }) => (
   <div
-    data-testid={`story-item-${index}`}
-    className="flex gap-4 mx-5 py-3 cursor-pointer touch-feedback animate-fade-in-up"
-    style={{ animationDelay: `${index * 80}ms` }}
+    data-testid={`latest-item-${index}`}
+    className="flex gap-3 px-5 py-3 cursor-pointer touch-feedback animate-fade-in border-b border-zinc-900/50"
+    style={{ animationDelay: `${index * 50}ms` }}
     onClick={onClick}
   >
-    <div className="relative w-28 h-20 rounded-xl overflow-hidden flex-shrink-0">
+    <div className="relative w-20 h-16 rounded-lg overflow-hidden flex-shrink-0">
       <img
-        src={story.image || getCategoryImage(story.topic)}
-        alt={story.title}
+        src={article.image || getCategoryImage(article.topic)}
+        alt={article.title}
         className="w-full h-full object-cover"
         loading="lazy"
       />
     </div>
     
     <div className="flex-1 min-w-0 flex flex-col justify-center">
-      <span className="text-[10px] font-semibold text-blue-400 uppercase tracking-wider mb-1">
-        {story.topic}
-      </span>
-      <h3 className="text-sm font-semibold text-white leading-snug line-clamp-2 mb-1.5">
-        {story.title}
-      </h3>
-      <div className="flex items-center gap-2 text-zinc-500 text-xs">
-        <span>{story.source}</span>
-        <span>•</span>
-        <span>{timeAgo(story.published)}</span>
+      <div className="flex items-center gap-1.5 mb-1">
+        <span className="text-[9px] font-semibold text-blue-400 uppercase tracking-wider">{article.topic}</span>
+        <span className="text-zinc-700">•</span>
+        <span className="text-[9px] text-zinc-500">{timeAgo(article.published)}</span>
       </div>
+      <h4 className="text-sm font-medium text-white leading-snug line-clamp-2">
+        {article.title}
+      </h4>
+      <span className="text-[10px] text-zinc-500 mt-1">{article.source}</span>
     </div>
     
     <button
-      data-testid={`save-story-${index}-btn`}
-      onClick={(e) => { e.stopPropagation(); onSave(story); }}
-      className={`self-center p-2 rounded-full transition-all ${
+      data-testid={`save-latest-${index}-btn`}
+      onClick={(e) => { e.stopPropagation(); onSave(article); }}
+      className={`self-center p-1.5 rounded-full transition-all ${
         isSaved ? 'text-blue-500' : 'text-zinc-600 hover:text-zinc-400'
       }`}
-      aria-label={isSaved ? 'Saved' : 'Save article'}
+      aria-label={isSaved ? 'Saved' : 'Save'}
     >
-      {isSaved ? <Check size={18} /> : <Bookmark size={18} />}
+      {isSaved ? <Check size={16} /> : <Bookmark size={16} />}
     </button>
   </div>
 );
 
-// Pages
+// Briefs Tab - AI curated stories
+const BriefsTab = ({ briefs, loading, onRefresh, savedIds, onSave, onStoryClick }) => (
+  <div data-testid="briefs-tab" className="pb-32">
+    {/* Header */}
+    <div className="sticky top-0 z-40 glass-heavy">
+      <div className="flex items-center justify-between px-5 py-4 pt-10">
+        <div>
+          <h1 className="font-serif text-2xl font-bold text-white">Briefs</h1>
+          <p className="text-xs text-zinc-500 mt-0.5">AI-curated story intelligence</p>
+        </div>
+        <button
+          data-testid="refresh-briefs-btn"
+          onClick={onRefresh}
+          disabled={loading}
+          className="p-2 rounded-full text-zinc-400 hover:text-white transition-colors touch-feedback"
+          aria-label="Refresh"
+        >
+          <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
+        </button>
+      </div>
+    </div>
+    
+    {loading && briefs.length === 0 ? (
+      <LoadingSkeleton />
+    ) : (
+      <div className="mt-2">
+        {briefs.map((story, idx) => (
+          <BriefCard
+            key={story.id || idx}
+            story={story}
+            index={idx}
+            onSave={onSave}
+            isSaved={savedIds.has(story.url || story.id)}
+            onClick={() => onStoryClick(story)}
+          />
+        ))}
+      </div>
+    )}
+  </div>
+);
+
+// Latest Tab - chronological news feed
+const LatestTab = ({ articles, loading, onRefresh, savedIds, onSave, onArticleClick }) => (
+  <div data-testid="latest-tab" className="pb-32">
+    {/* Header */}
+    <div className="sticky top-0 z-40 glass-heavy">
+      <div className="flex items-center justify-between px-5 py-4 pt-10">
+        <div>
+          <h1 className="font-serif text-2xl font-bold text-white">Latest</h1>
+          <p className="text-xs text-zinc-500 mt-0.5">Real-time news from all sources</p>
+        </div>
+        <button
+          data-testid="refresh-latest-btn"
+          onClick={onRefresh}
+          disabled={loading}
+          className="p-2 rounded-full text-zinc-400 hover:text-white transition-colors touch-feedback"
+          aria-label="Refresh"
+        >
+          <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
+        </button>
+      </div>
+    </div>
+    
+    {loading && articles.length === 0 ? (
+      <LoadingSkeleton />
+    ) : (
+      <div className="mt-2">
+        {articles.map((article, idx) => (
+          <LatestNewsItem
+            key={article.id || idx}
+            article={article}
+            index={idx}
+            onSave={onSave}
+            isSaved={savedIds.has(article.url || article.id)}
+            onClick={() => onArticleClick(article)}
+          />
+        ))}
+      </div>
+    )}
+  </div>
+);
+
+// Saved Tab
+const SavedTab = ({ savedStories, onStoryClick, onRemove }) => (
+  <div data-testid="saved-tab" className="pb-32">
+    <div className="sticky top-0 z-40 glass-heavy px-5 py-4 pt-10">
+      <h1 className="font-serif text-2xl font-bold text-white">Saved</h1>
+      <p className="text-xs text-zinc-500 mt-0.5">{savedStories.length} article{savedStories.length !== 1 ? 's' : ''} saved</p>
+    </div>
+    
+    {savedStories.length === 0 ? (
+      <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
+        <div className="w-14 h-14 rounded-full bg-zinc-900 flex items-center justify-center mb-4">
+          <Bookmark size={24} className="text-zinc-600" />
+        </div>
+        <p className="text-zinc-400 mb-1 text-sm">No saved articles</p>
+        <p className="text-zinc-600 text-xs">Bookmark stories to read later</p>
+      </div>
+    ) : (
+      <div className="mt-2">
+        {savedStories.map((story, idx) => (
+          <LatestNewsItem
+            key={story.url || story.id || idx}
+            article={story}
+            index={idx}
+            onSave={() => onRemove(story)}
+            isSaved={true}
+            onClick={() => onStoryClick(story)}
+          />
+        ))}
+      </div>
+    )}
+  </div>
+);
+
+// Story Detail View
+const StoryDetail = ({ story, onBack, onSave, isSaved }) => {
+  if (!story) return null;
+  
+  const hasSummary = story.summary && (Array.isArray(story.summary) ? story.summary.length > 0 : story.summary);
+  
+  return (
+    <div data-testid="story-detail" className="min-h-screen pb-32 animate-fade-in">
+      {/* Hero image */}
+      <div className="relative h-64">
+        <img
+          src={story.image || getCategoryImage(story.topic)}
+          alt={story.title}
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/70 to-transparent" />
+        
+        {/* Back button */}
+        <button
+          data-testid="back-btn"
+          onClick={onBack}
+          className="absolute top-10 left-4 p-2 rounded-full bg-black/40 backdrop-blur-sm text-white touch-feedback"
+          aria-label="Go back"
+        >
+          <ChevronLeft size={20} />
+        </button>
+        
+        {/* Save button */}
+        <button
+          data-testid="detail-save-btn"
+          onClick={() => onSave(story)}
+          className={`absolute top-10 right-4 p-2 rounded-full transition-all touch-feedback ${
+            isSaved ? 'bg-blue-500 text-white' : 'bg-black/40 backdrop-blur-sm text-white'
+          }`}
+          aria-label={isSaved ? 'Saved' : 'Save'}
+        >
+          {isSaved ? <Check size={18} /> : <Bookmark size={18} />}
+        </button>
+      </div>
+      
+      {/* Content */}
+      <div className="px-5 -mt-16 relative z-10">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-[10px] font-semibold text-blue-400 uppercase tracking-wider">{story.topic}</span>
+          <span className="text-zinc-600">•</span>
+          <span className="text-[10px] text-zinc-500">{story.source}</span>
+          <span className="text-zinc-600">•</span>
+          <span className="text-[10px] text-zinc-500">{timeAgo(story.published)}</span>
+        </div>
+        
+        <h1 className="font-serif text-xl font-bold leading-tight text-white mb-5">
+          {story.title}
+        </h1>
+        
+        {/* AI Summary card */}
+        {hasSummary && (
+          <div data-testid="ai-summary-card" className="bg-zinc-900/80 p-4 rounded-xl border border-white/10 backdrop-blur-md mb-6 relative">
+            <div className="absolute top-3 right-3 flex items-center gap-1 px-2 py-0.5 bg-blue-500/10 rounded border border-blue-500/20">
+              <Sparkles size={8} className="text-blue-400" />
+              <span className="text-[8px] font-bold text-blue-400 uppercase">AI Summary</span>
+            </div>
+            <div className="space-y-2 pr-16">
+              {(Array.isArray(story.summary) ? story.summary : [story.summary]).map((sentence, idx) => (
+                <p key={idx} className="text-sm text-zinc-300 leading-relaxed">
+                  {sentence}
+                </p>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* Timeline */}
+        {story.timeline && story.timeline.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-4">Timeline</h3>
+            <div className="relative pl-6 border-l-2 border-zinc-800 ml-1 space-y-4">
+              {story.timeline.map((event, idx) => (
+                <div key={idx} className="relative animate-slide-in" style={{ animationDelay: `${idx * 80}ms` }}>
+                  <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-blue-500 ring-4 ring-zinc-950" />
+                  <div className="bg-zinc-900/50 p-3 rounded-lg border border-white/5">
+                    <p className="text-[10px] text-zinc-500 mb-1 flex items-center gap-1">
+                      <Clock size={9} />
+                      {timeAgo(event.time)}
+                    </p>
+                    <p className="text-xs text-white font-medium mb-0.5">{event.title}</p>
+                    <p className="text-[10px] text-zinc-500">{event.source}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* Read original */}
+        {story.url && story.url !== '#' && (
+          <a
+            href={story.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-testid="read-original-link"
+            className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-zinc-900 border border-zinc-800 text-white text-sm font-medium transition-all hover:bg-zinc-800 touch-feedback"
+          >
+            Read Original
+            <ExternalLink size={14} />
+          </a>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Onboarding Screen
 const OnboardingScreen = ({ onComplete }) => {
   const [selected, setSelected] = useState([]);
   const topics = ['AI', 'Technology', 'Business', 'Science', 'Geopolitics', 'Energy', 'Climate', 'Sports'];
   
   const toggleTopic = (topic) => {
     setSelected(prev => 
-      prev.includes(topic) 
-        ? prev.filter(t => t !== topic) 
-        : [...prev, topic]
+      prev.includes(topic) ? prev.filter(t => t !== topic) : [...prev, topic]
     );
   };
   
@@ -317,22 +546,22 @@ const OnboardingScreen = ({ onComplete }) => {
   };
   
   return (
-    <div data-testid="onboarding-screen" className="min-h-screen flex flex-col px-6 pt-20 pb-32">
+    <div data-testid="onboarding-screen" className="min-h-screen flex flex-col px-6 pt-16 pb-32">
       <div className="animate-fade-in-up">
-        <h1 className="font-serif text-4xl font-bold mb-3 text-white">Verityn</h1>
-        <p className="text-zinc-400 text-lg mb-2">Truth in motion.</p>
-        <p className="text-zinc-500 mb-10">Choose topics that matter to you</p>
+        <h1 className="font-serif text-3xl font-bold mb-2 text-white">Verityn</h1>
+        <p className="text-zinc-400 text-base mb-1">Truth in motion.</p>
+        <p className="text-zinc-500 text-sm mb-8">Select topics you care about</p>
       </div>
       
-      <div className="flex flex-wrap gap-3 stagger-children">
+      <div className="flex flex-wrap gap-2.5 stagger-children">
         {topics.map((topic) => (
           <button
             key={topic}
             data-testid={`topic-${topic.toLowerCase()}`}
             onClick={() => toggleTopic(topic)}
-            className={`px-6 py-3.5 rounded-full text-sm font-medium transition-all touch-feedback animate-fade-in-up ${
+            className={`px-5 py-3 rounded-full text-sm font-medium transition-all touch-feedback animate-fade-in-up ${
               selected.includes(topic)
-                ? 'bg-white text-black shadow-[0_0_25px_rgba(255,255,255,0.25)]'
+                ? 'bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.2)]'
                 : 'bg-zinc-900/80 text-zinc-300 border border-zinc-800 hover:border-zinc-600'
             }`}
           >
@@ -346,238 +575,25 @@ const OnboardingScreen = ({ onComplete }) => {
           data-testid="continue-btn"
           onClick={handleContinue}
           disabled={selected.length === 0}
-          className={`w-full py-4 rounded-2xl text-base font-semibold transition-all touch-feedback ${
+          className={`w-full py-3.5 rounded-xl text-sm font-semibold transition-all touch-feedback ${
             selected.length > 0
-              ? 'bg-white text-black hover:bg-zinc-200 animate-pulse-glow'
+              ? 'bg-white text-black hover:bg-zinc-200'
               : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
           }`}
         >
-          {selected.length > 0 ? `Continue with ${selected.length} topics` : 'Select at least one topic'}
+          {selected.length > 0 ? `Continue with ${selected.length} topic${selected.length > 1 ? 's' : ''}` : 'Select topics to continue'}
         </button>
       </div>
     </div>
   );
 };
-
-const HomeFeed = ({ stories, loading, onRefresh, savedIds, onSave, onStoryClick }) => {
-  const [activeCategory, setActiveCategory] = useState('All');
-  const categories = ['All', 'AI', 'Technology', 'Business', 'Science', 'Climate'];
-  
-  const filteredStories = activeCategory === 'All' 
-    ? stories 
-    : stories.filter(s => s.topic?.toLowerCase() === activeCategory.toLowerCase());
-  
-  const topStory = filteredStories[0];
-  const otherStories = filteredStories.slice(1);
-  
-  return (
-    <div data-testid="home-feed" className="pb-32">
-      {/* Header */}
-      <div className="sticky top-0 z-40 glass-heavy pt-safe">
-        <div className="flex items-center justify-between px-5 py-4">
-          <h1 className="font-serif text-2xl font-bold text-white">Verityn</h1>
-          <button
-            data-testid="refresh-btn"
-            onClick={onRefresh}
-            disabled={loading}
-            className="p-2 rounded-full text-zinc-400 hover:text-white transition-colors touch-feedback"
-            aria-label="Refresh feed"
-          >
-            <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
-          </button>
-        </div>
-        
-        <CategoryPills 
-          categories={categories} 
-          activeCategory={activeCategory} 
-          onSelect={setActiveCategory} 
-        />
-      </div>
-      
-      {loading && stories.length === 0 ? (
-        <LoadingSkeleton />
-      ) : (
-        <div className="space-y-6 mt-4">
-          {topStory && (
-            <TopStoryCard 
-              story={topStory} 
-              onSave={onSave}
-              isSaved={savedIds.has(topStory.url || topStory.id)}
-              onClick={() => onStoryClick(topStory)}
-            />
-          )}
-          
-          <div className="divide-y divide-zinc-900">
-            {otherStories.map((story, idx) => (
-              <StoryListItem
-                key={story.id || story.url || idx}
-                story={story}
-                index={idx}
-                onSave={onSave}
-                isSaved={savedIds.has(story.url || story.id)}
-                onClick={() => onStoryClick(story)}
-              />
-            ))}
-          </div>
-          
-          {filteredStories.length === 0 && !loading && (
-            <div className="text-center py-16 px-6">
-              <p className="text-zinc-500">No stories found for this category</p>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-};
-
-const StoryDetail = ({ story, onBack, onSave, isSaved }) => {
-  if (!story) return null;
-  
-  return (
-    <div data-testid="story-detail" className="min-h-screen pb-24 animate-fade-in">
-      {/* Hero image */}
-      <div className="relative h-72">
-        <img
-          src={story.image || getCategoryImage(story.topic)}
-          alt={story.title}
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 hero-gradient" />
-        
-        {/* Back button */}
-        <button
-          data-testid="back-btn"
-          onClick={onBack}
-          className="absolute top-4 left-4 p-2.5 rounded-full bg-black/40 backdrop-blur-sm text-white touch-feedback pt-safe"
-          aria-label="Go back"
-        >
-          <ChevronLeft size={22} />
-        </button>
-        
-        {/* Save button */}
-        <button
-          data-testid="detail-save-btn"
-          onClick={() => onSave(story)}
-          className={`absolute top-4 right-4 p-2.5 rounded-full transition-all touch-feedback pt-safe ${
-            isSaved 
-              ? 'bg-blue-500 text-white' 
-              : 'bg-black/40 backdrop-blur-sm text-white'
-          }`}
-          aria-label={isSaved ? 'Saved' : 'Save article'}
-        >
-          {isSaved ? <Check size={20} /> : <Bookmark size={20} />}
-        </button>
-      </div>
-      
-      {/* Content */}
-      <div className="px-5 -mt-20 relative z-10">
-        <div className="flex items-center gap-2 mb-3">
-          <span className="text-xs font-semibold text-blue-400 uppercase tracking-wider">{story.topic}</span>
-          <span className="text-zinc-600">•</span>
-          <span className="text-xs text-zinc-500">{story.source}</span>
-          <span className="text-zinc-600">•</span>
-          <span className="text-xs text-zinc-500">{timeAgo(story.published)}</span>
-        </div>
-        
-        <h1 className="font-serif text-2xl md:text-3xl font-bold leading-tight text-white mb-6">
-          {story.title}
-        </h1>
-        
-        {/* AI Summary card */}
-        {story.summary && (
-          <div data-testid="ai-summary-card" className="bg-zinc-900/80 p-5 rounded-2xl border border-white/10 backdrop-blur-md mb-8 relative overflow-hidden">
-            <div className="absolute top-4 right-4 flex items-center gap-1 px-2 py-1 bg-blue-500/10 rounded border border-blue-500/20">
-              <Sparkles size={10} className="text-blue-400" />
-              <span className="text-[9px] font-bold text-blue-400 uppercase">AI Summary</span>
-            </div>
-            <div className="space-y-3 pr-20">
-              {(Array.isArray(story.summary) ? story.summary : [story.summary]).map((sentence, idx) => (
-                <p key={idx} className="text-zinc-300 leading-relaxed">
-                  {sentence}
-                </p>
-              ))}
-            </div>
-          </div>
-        )}
-        
-        {/* Timeline */}
-        {story.timeline && story.timeline.length > 0 && (
-          <div className="mb-8">
-            <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-6">Timeline</h3>
-            <div className="relative pl-8 border-l-2 border-zinc-800 ml-2 space-y-6">
-              {story.timeline.map((event, idx) => (
-                <div key={idx} className="relative animate-slide-in" style={{ animationDelay: `${idx * 100}ms` }}>
-                  <div className="absolute -left-[25px] top-1.5 w-3 h-3 rounded-full bg-blue-500 ring-4 ring-zinc-950" />
-                  <div className="bg-zinc-900/50 p-4 rounded-xl border border-white/5">
-                    <p className="text-xs text-zinc-500 mb-1.5 flex items-center gap-1.5">
-                      <Clock size={10} />
-                      {timeAgo(event.time)}
-                    </p>
-                    <p className="text-sm text-white font-medium mb-1">{event.title}</p>
-                    <p className="text-xs text-zinc-500">{event.source}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        
-        {/* Read original */}
-        {story.url && (
-          <a
-            href={story.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            data-testid="read-original-link"
-            className="flex items-center justify-center gap-2 w-full py-4 rounded-2xl bg-zinc-900 border border-zinc-800 text-white font-medium transition-all hover:bg-zinc-800 touch-feedback"
-          >
-            Read Original Article
-            <ExternalLink size={16} />
-          </a>
-        )}
-      </div>
-    </div>
-  );
-};
-
-const SavedScreen = ({ savedStories, onStoryClick, onRemove }) => (
-  <div data-testid="saved-screen" className="min-h-screen pb-32">
-    <div className="sticky top-0 z-40 glass-heavy px-5 py-5 pt-12">
-      <h1 className="font-serif text-2xl font-bold text-white">Saved</h1>
-      <p className="text-sm text-zinc-500 mt-1">{savedStories.length} article{savedStories.length !== 1 ? 's' : ''}</p>
-    </div>
-    
-    {savedStories.length === 0 ? (
-      <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
-        <div className="w-16 h-16 rounded-full bg-zinc-900 flex items-center justify-center mb-4">
-          <Bookmark size={28} className="text-zinc-600" />
-        </div>
-        <p className="text-zinc-400 mb-2">No saved articles yet</p>
-        <p className="text-zinc-600 text-sm">Tap the bookmark icon to save stories for later</p>
-      </div>
-    ) : (
-      <div className="divide-y divide-zinc-900 mt-4">
-        {savedStories.map((story, idx) => (
-          <StoryListItem
-            key={story.url || story.id || idx}
-            story={story}
-            index={idx}
-            onSave={() => onRemove(story)}
-            isSaved={true}
-            onClick={() => onStoryClick(story)}
-          />
-        ))}
-      </div>
-    )}
-  </div>
-);
 
 // Main App
 const AppContent = () => {
   const [isOnboarded, setIsOnboarded] = useState(() => localStorage.getItem('verityn_onboarded') === 'true');
-  const [activeTab, setActiveTab] = useState('home');
-  const [stories, setStories] = useState(MOCK_STORIES);
+  const [activeTab, setActiveTab] = useState('briefs');
+  const [briefs, setBriefs] = useState(MOCK_BRIEFS);
+  const [latestNews, setLatestNews] = useState(MOCK_LATEST);
   const [loading, setLoading] = useState(false);
   const [savedStories, setSavedStories] = useState(() => {
     const saved = localStorage.getItem('verityn_saved');
@@ -587,14 +603,14 @@ const AppContent = () => {
   
   const savedIds = new Set(savedStories.map(s => s.url || s.id));
   
-  const fetchStories = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await axios.get(FIREBASE_ENDPOINT, { timeout: 30000 });
+      const response = await axios.get(FIREBASE_ENDPOINT, { timeout: 15000 });
       const data = response.data;
       
       if (data.stories && data.stories.length > 0) {
-        const formattedStories = data.stories.map((s, idx) => ({
+        const formattedBriefs = data.stories.map((s, idx) => ({
           id: idx + 1,
           title: s.title,
           summary: s.summary || [],
@@ -604,14 +620,27 @@ const AppContent = () => {
           url: s.url,
           image: s.image || getCategoryImage(s.topic),
           timeline: s.timeline || [],
-          importance: s.importance || 50
+          importance: s.importance || 50,
+          articleCount: s.clusterArticles?.length || Math.floor(Math.random() * 10) + 3
         }));
-        setStories(formattedStories);
-        toast.success('Feed updated');
+        setBriefs(formattedBriefs);
+      }
+      
+      if (data.feed && data.feed.length > 0) {
+        const formattedLatest = data.feed.map((a, idx) => ({
+          id: 100 + idx,
+          title: a.title,
+          source: a.source || 'News',
+          published: a.published,
+          topic: a.topic || 'General',
+          url: a.url,
+          image: a.image || getCategoryImage(a.topic)
+        }));
+        setLatestNews(formattedLatest);
       }
     } catch (error) {
-      console.error('Failed to fetch stories:', error);
-      toast.error('Using cached stories');
+      // Silent fail - use mock data
+      console.log('Using local data');
     } finally {
       setLoading(false);
     }
@@ -619,9 +648,9 @@ const AppContent = () => {
   
   useEffect(() => {
     if (isOnboarded) {
-      fetchStories();
+      fetchData();
     }
-  }, [isOnboarded, fetchStories]);
+  }, [isOnboarded, fetchData]);
   
   useEffect(() => {
     localStorage.setItem('verityn_saved', JSON.stringify(savedStories));
@@ -631,10 +660,9 @@ const AppContent = () => {
     const storyKey = story.url || story.id;
     if (savedIds.has(storyKey)) {
       setSavedStories(prev => prev.filter(s => (s.url || s.id) !== storyKey));
-      toast('Removed from saved');
     } else {
       setSavedStories(prev => [...prev, story]);
-      toast.success('Saved for later');
+      toast.success('Saved');
     }
   };
   
@@ -663,18 +691,28 @@ const AppContent = () => {
   
   return (
     <>
-      {activeTab === 'home' && (
-        <HomeFeed 
-          stories={stories}
+      {activeTab === 'briefs' && (
+        <BriefsTab 
+          briefs={briefs}
           loading={loading}
-          onRefresh={fetchStories}
+          onRefresh={fetchData}
           savedIds={savedIds}
           onSave={handleSave}
           onStoryClick={handleStoryClick}
         />
       )}
+      {activeTab === 'latest' && (
+        <LatestTab 
+          articles={latestNews}
+          loading={loading}
+          onRefresh={fetchData}
+          savedIds={savedIds}
+          onSave={handleSave}
+          onArticleClick={handleStoryClick}
+        />
+      )}
       {activeTab === 'saved' && (
-        <SavedScreen 
+        <SavedTab 
           savedStories={savedStories}
           onStoryClick={handleStoryClick}
           onRemove={handleSave}
@@ -698,10 +736,13 @@ function App() {
           position="top-center" 
           theme="dark"
           toastOptions={{
+            duration: 1500,
             style: {
               background: '#18181b',
               border: '1px solid rgba(255,255,255,0.1)',
               color: '#fafafa',
+              fontSize: '13px',
+              padding: '12px 16px',
             },
           }}
         />
