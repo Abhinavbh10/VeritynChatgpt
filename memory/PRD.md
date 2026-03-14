@@ -26,87 +26,80 @@ Convert an existing news app codebase (Expo/React Native with Firebase backend) 
 - AI-generated story summaries
 - Story clustering with timelines
 - Save/bookmark functionality
-- Category filtering
+- Three-tab navigation system
 - Mobile-first responsive design
 
 ## What's Been Implemented (January 2026)
 
-### ✅ Completed Features
-1. **Onboarding Screen**
-   - Topic selection (AI, Technology, Business, Science, Geopolitics, Energy, Climate, Sports)
-   - Animated pill buttons with selection state
-   - Continue button with topic count
+### ✅ v1.0 - MVP Complete
+- Basic feed, onboarding, save functionality
 
-2. **Home Feed**
-   - Hero story card with AI summary badge
-   - Category filter pills (All, AI, Technology, Business, Science, Climate)
-   - Story list with thumbnails
-   - Save/bookmark functionality with toast notifications
-   - Refresh button
-   - Time-ago timestamps
+### ✅ v2.0 - Three-Tab System (Current)
 
-3. **Story Detail View**
-   - Hero image with gradient overlay
-   - AI Summary card with sparkle badge
-   - Timeline view with chronological events
-   - Read Original Article link
-   - Back navigation
-   - Save button
+**New Architecture:**
+1. **Briefs Tab** - AI-curated story intelligence
+   - Premium card design with hero images
+   - AI BRIEF badge on each card
+   - Source count badges (e.g., "12 sources")
+   - AI-generated summaries visible on cards
+   - Save/bookmark functionality
 
-4. **Saved Screen**
-   - Header with article count
-   - Saved stories list
-   - Unsave functionality
-   - Empty state design
+2. **Latest Tab** - Real-time chronological feed
+   - Compact list view for quick scanning
+   - Time-based ordering (30m ago, 1h ago, etc.)
+   - Source attribution
+   - Save functionality
 
-5. **Bottom Navigation**
-   - Feed and Saved tabs
-   - Active state indicator
-   - Positioned above Emergent badge
+3. **Saved Tab** - Bookmarked articles
+   - Article count in header
+   - Empty state with helpful message
+   - Remove saved items
 
-### Design Implementation
-- Dark theme (#09090b base)
-- Playfair Display + Inter fonts
-- Glassmorphism effects
-- Smooth animations (fade-in, slide-in)
-- Touch feedback on interactions
+**Story Detail View:**
+- Hero image with gradient overlay
+- AI Summary card with badge
+- Timeline showing story evolution
+- Read Original link
+- Back navigation
+
+**UX Improvements:**
+- Removed verbose "loading from cache" messages
+- Silent fail on API errors with graceful fallback
+- Cleaner toast notifications
+- Faster perceived performance
+
+## Backend Function Files (Updated)
+- `clusterStories.js` - Entity + keyword matching with cluster center comparison
+- `extractEntities.js` - Proper noun and acronym extraction
+- `selectDiverseStories.js` - Scoring based on importance + cluster size
+- `extractKeywords.js` - Enhanced stopword filtering
 
 ## Prioritized Backlog
 
-### P0 - Critical (Not Yet Implemented)
+### P0 - Critical
+- [ ] Fix CORS for Firebase endpoint in production
 - [ ] Push notifications for breaking news
-- [ ] Offline mode with cached stories
 - [ ] User authentication (Firebase Auth)
 
-### P1 - High Priority
+### P1 - High Priority  
+- [ ] Pull-to-refresh gesture
 - [ ] Share story functionality
 - [ ] Search across stories
-- [ ] Pull-to-refresh gesture
-- [ ] Reading progress indicator
-- [ ] Story read/unread state
+- [ ] Offline mode with cached stories
 
 ### P2 - Medium Priority
 - [ ] Personalized feed based on reading history
-- [ ] Dark/Light theme toggle
-- [ ] Text size adjustment
 - [ ] Topic management in settings
-- [ ] Onboarding skip option for returning users
+- [ ] Reading progress indicator
 
 ### P3 - Nice to Have
 - [ ] Social feed integration
-- [ ] Comments/discussion feature
 - [ ] Story bookmarking with folders
-- [ ] Widget support (iOS/Android)
-- [ ] Watch OS / Wear OS support
+- [ ] Widget support
 
 ## Next Tasks
-1. Connect to Firebase endpoint with proper CORS configuration
-2. Implement push notifications
-3. Add user authentication
-4. Build native React Native version for App Store submission
-5. Implement offline caching
-
-## Technical Notes
-- Firebase endpoint has CORS restrictions in preview - works with mock data fallback
-- Mock stories provide complete functionality for demo/testing
-- localStorage persists saved articles and onboarding state
+1. Configure CORS on Firebase for production domain
+2. Build native React Native version using Expo codebase
+3. Implement push notifications
+4. Add user authentication
+5. Submit to App Store / Play Store
