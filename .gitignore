@@ -79,3 +79,7 @@ agenthub/agents/youtube/db
 # Mobile development
 android-sdk/ verityn.zip
 verityn.zip
+-e 
+# Environment files
+*.env
+*.env.*
