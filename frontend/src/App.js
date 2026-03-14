@@ -606,7 +606,18 @@ const AppContent = () => {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await axios.get(FIREBASE_ENDPOINT, { timeout: 15000 });
+      // Get user's selected topics for personalized feed
+      const userTopicsStr = localStorage.getItem('verityn_topics');
+      const userTopics = userTopicsStr ? JSON.parse(userTopicsStr) : [];
+      
+      // Send user topics to backend for personalization
+      const params = new URLSearchParams();
+      if (userTopics.length > 0) {
+        params.append('userTopics', userTopics.join(','));
+      }
+      
+      const url = `${FIREBASE_ENDPOINT}${params.toString() ? '?' + params.toString() : ''}`;
+      const response = await axios.get(url, { timeout: 15000 });
       const data = response.data;
       
       if (data.stories && data.stories.length > 0) {
@@ -621,7 +632,7 @@ const AppContent = () => {
           image: s.image || getCategoryImage(s.topic),
           timeline: s.timeline || [],
           importance: s.importance || 50,
-          articleCount: s.clusterArticles?.length || Math.floor(Math.random() * 10) + 3
+          articleCount: s.articleCount || s.clusterArticles?.length || 3
         }));
         setBriefs(formattedBriefs);
       }
