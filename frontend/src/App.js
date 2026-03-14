@@ -34,6 +34,14 @@ const MOCK_BRIEFS = [
     image: CATEGORY_IMAGES.ai,
     importance: 95,
     articleCount: 12,
+    sourceCount: 8,
+    credibility: 'HIGH',
+    isBreaking: true,
+    breakingLabel: 'BREAKING',
+    relatedStories: [
+      { id: 4, title: 'European Union Passes Comprehensive AI Regulation Framework', topic: 'Technology' },
+      { id: 6, title: 'Google DeepMind Achieves New Milestone in AGI Research', topic: 'AI' }
+    ],
     timeline: [
       { time: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(), timeLabel: '6:00 AM', title: 'OpenAI sends press invites for major announcement', source: 'The Verge', url: '#' },
       { time: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), timeLabel: '9:00 AM', gap: '3 hours later', title: 'GPT-5 officially announced at press event', source: 'TechCrunch', url: '#' },
@@ -52,6 +60,12 @@ const MOCK_BRIEFS = [
     image: CATEGORY_IMAGES.business,
     importance: 88,
     articleCount: 8,
+    sourceCount: 6,
+    credibility: 'HIGH',
+    isBreaking: false,
+    relatedStories: [
+      { id: 5, title: 'Global Markets React to US Economic Policy Shifts', topic: 'Business' }
+    ],
     timeline: [
       { time: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(), timeLabel: 'Yesterday', title: 'Labor Department releases softer jobs data', source: 'WSJ', url: '#' },
       { time: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), timeLabel: '9:30 AM', gap: 'Next day', title: 'Powell hints at policy shift in prepared remarks', source: 'CNBC', url: '#' },
@@ -214,19 +228,40 @@ const BriefCard = ({ story, onSave, isSaved, onClick, index }) => (
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
       
-      {/* AI Badge */}
-      <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-500/20 border border-blue-500/30 backdrop-blur-sm">
-        <Sparkles size={10} className="text-blue-400" />
-        <span className="text-[9px] font-bold text-blue-300 uppercase tracking-wider">AI Brief</span>
-      </div>
-      
-      {/* Article count badge */}
-      {story.articleCount && (
-        <div className="absolute top-3 right-12 flex items-center gap-1 px-2 py-1 rounded-full bg-white/10 backdrop-blur-sm">
-          <Newspaper size={10} className="text-zinc-300" />
-          <span className="text-[9px] font-medium text-zinc-300">{story.articleCount} sources</span>
+      {/* Breaking News Badge */}
+      {story.isBreaking && (
+        <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/90 animate-pulse">
+          <Zap size={10} className="text-white" />
+          <span className="text-[9px] font-bold text-white uppercase tracking-wider">{story.breakingLabel || 'Breaking'}</span>
         </div>
       )}
+      
+      {/* AI Badge (show if not breaking) */}
+      {!story.isBreaking && (
+        <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-500/20 border border-blue-500/30 backdrop-blur-sm">
+          <Sparkles size={10} className="text-blue-400" />
+          <span className="text-[9px] font-bold text-blue-300 uppercase tracking-wider">AI Brief</span>
+        </div>
+      )}
+      
+      {/* Source count + Credibility badge */}
+      <div className="absolute top-3 right-12 flex items-center gap-2">
+        {story.sourceCount && (
+          <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-white/10 backdrop-blur-sm">
+            <Newspaper size={10} className="text-zinc-300" />
+            <span className="text-[9px] font-medium text-zinc-300">{story.sourceCount}</span>
+          </div>
+        )}
+        {story.credibility && (
+          <div className={`px-2 py-1 rounded-full text-[8px] font-bold uppercase tracking-wider ${
+            story.credibility === 'HIGH' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
+            story.credibility === 'MEDIUM' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
+            'bg-zinc-500/20 text-zinc-400 border border-zinc-500/30'
+          }`}>
+            {story.credibility === 'HIGH' ? '✓ Verified' : story.credibility === 'LOW' ? 'Unverified' : ''}
+          </div>
+        )}
+      </div>
       
       {/* Save button */}
       <button
@@ -524,6 +559,30 @@ const StoryDetail = ({ story, onBack, onSave, isSaved }) => {
                       <p className="text-xs text-white font-medium leading-snug">{event.title}</p>
                     </div>
                   </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* Related Stories */}
+        {story.relatedStories && story.relatedStories.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
+              Related Stories
+            </h3>
+            <div className="space-y-2">
+              {story.relatedStories.map((related, idx) => (
+                <div 
+                  key={idx}
+                  className="flex items-center gap-3 p-3 rounded-lg bg-zinc-900/50 border border-white/5"
+                >
+                  <div className="w-1 h-8 rounded-full bg-blue-500/50" />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[9px] text-blue-400 uppercase tracking-wider">{related.topic}</span>
+                    <p className="text-xs text-zinc-300 line-clamp-1">{related.title}</p>
+                  </div>
+                  <ChevronLeft size={14} className="text-zinc-600 rotate-180" />
                 </div>
               ))}
             </div>
